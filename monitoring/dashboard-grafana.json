@@ -1,6 +1,6 @@
 {
-  "title": "API Partenaire - Dashboard Optimisé",
-  "uid": "api-partenaire-v2",
+  "title": "API demo - Dashboard Optimisé",
+  "uid": "api-demo-v2",
   "schemaVersion": 39,
   "tags": ["quarkus", "api", "micrometer", "prometheus"],
   "editable": true,
