@@ -1,0 +1,228 @@
+{
+  "title": "API Partenaire - Dashboard Optimisé",
+  "uid": "api-partenaire-v2",
+  "schemaVersion": 39,
+  "tags": ["quarkus", "api", "micrometer", "prometheus"],
+  "editable": true,
+  "refresh": "5s",
+  "timezone": "browser",
+  "time": { "from": "now-1h", "to": "now" },
+
+  "templating": {
+    "list": [
+      {
+        "name": "endpoint",
+        "label": "Endpoint",
+        "type": "query",
+        "datasource": { "type": "prometheus", "uid": "prometheus" },
+        "definition": "label_values(api_endpoint_calls_total, endpoint)",
+        "query": "label_values(api_endpoint_calls_total, endpoint)",
+        "includeAll": true,
+        "allValue": ".*",
+        "multi": true,
+        "sort": 1,
+        "refresh": 2,
+        "hide": 0,
+        "current": {
+          "selected": true,
+          "text": ["All"],
+          "value": ["$__all"]
+        }
+      }
+    ]
+  },
+
+  "panels": [
+
+    {
+      "id": 1, "type": "stat", "title": "Total Calls",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "x": 0, "y": 0, "w": 6, "h": 4 },
+      "targets": [{ "expr": "sum(api_endpoint_calls_total) or vector(0)", "refId": "A" }],
+      "options": { "colorMode": "value", "textMode": "value" }
+    },
+
+    {
+      "id": 2, "type": "stat", "title": "Total Errors",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "x": 6, "y": 0, "w": 6, "h": 4 },
+      "targets": [{ "expr": "sum(api_endpoint_errors_total) or vector(0)", "refId": "A" }],
+      "options": { "colorMode": "value", "textMode": "value" },
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "red", "value": 1 }
+            ]
+          },
+          "color": { "mode": "thresholds" }
+        }
+      }
+    },
+
+    {
+      "id": 3, "type": "stat", "title": "Latency P95 (Global)",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "x": 12, "y": 0, "w": 6, "h": 4 },
+      "targets": [{
+        "expr": "histogram_quantile(0.95, sum by (le) (rate(api_endpoint_latency_seconds_bucket[15m])))",
+        "refId": "A"
+      }],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 0.5 },
+              { "color": "red", "value": 1 }
+            ]
+          },
+          "color": { "mode": "thresholds" }
+        }
+      }
+    },
+
+    {
+      "id": 4, "type": "stat", "title": "Success Rate",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "x": 18, "y": 0, "w": 6, "h": 4 },
+      "targets": [{
+        "expr": "1 - clamp_min(sum(rate(api_endpoint_errors_total[15m])) or vector(0), 0) / clamp_min(sum(rate(api_endpoint_calls_total[15m])), 1)",
+        "refId": "A"
+      }],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "min": 0,
+          "max": 1,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "yellow", "value": 0.9 },
+              { "color": "green", "value": 0.95 }
+            ]
+          },
+          "color": { "mode": "thresholds" }
+        }
+      }
+    },
+
+    {
+      "id": 5, "type": "timeseries", "title": "Latency Percentiles (par endpoint)",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "x": 0, "y": 4, "w": 12, "h": 8 },
+      "fieldConfig": { "defaults": { "unit": "s" } },
+      "targets": [
+        { "refId": "A", "expr": "histogram_quantile(0.50, sum by (le, endpoint) (rate(api_endpoint_latency_seconds_bucket{endpoint=~\"$endpoint\"}[15m])))", "legendFormat": "{{endpoint}} - P50" },
+        { "refId": "B", "expr": "histogram_quantile(0.95, sum by (le, endpoint) (rate(api_endpoint_latency_seconds_bucket{endpoint=~\"$endpoint\"}[15m])))", "legendFormat": "{{endpoint}} - P95" },
+        { "refId": "C", "expr": "histogram_quantile(0.99, sum by (le, endpoint) (rate(api_endpoint_latency_seconds_bucket{endpoint=~\"$endpoint\"}[15m])))", "legendFormat": "{{endpoint}} - P99" }
+      ]
+    },
+
+    {
+      "id": 6, "type": "timeseries", "title": "Request Rate (par endpoint)",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "x": 12, "y": 4, "w": 12, "h": 8 },
+      "fieldConfig": { "defaults": { "unit": "reqps" } },
+      "targets": [{
+        "refId": "A",
+        "expr": "sum by (endpoint) (rate(api_endpoint_calls_total{endpoint=~\"$endpoint\"}[5m]))",
+        "legendFormat": "{{endpoint}}"
+      }]
+    },
+
+    {
+      "id": 7, "type": "timeseries", "title": "Error Rate (par endpoint)",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "x": 0, "y": 12, "w": 12, "h": 8 },
+      "fieldConfig": { "defaults": { "unit": "reqps" } },
+      "targets": [{
+        "refId": "A",
+        "expr": "sum by (endpoint) (rate(api_endpoint_errors_total{endpoint=~\"$endpoint\"}[5m])) or vector(0)",
+        "legendFormat": "{{endpoint}}"
+      }]
+    },
+
+    {
+      "id": 8, "type": "timeseries", "title": "Success Rate (par endpoint)",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "x": 12, "y": 12, "w": 12, "h": 8 },
+      "fieldConfig": { "defaults": { "unit": "percentunit", "min": 0, "max": 1 } },
+      "targets": [{
+        "refId": "A",
+        "expr": "1 - clamp_min(sum by (endpoint) (rate(api_endpoint_errors_total{endpoint=~\"$endpoint\"}[5m])) or sum by (endpoint) (rate(api_endpoint_calls_total{endpoint=~\"$endpoint\"}[5m])) * 0, 0) / clamp_min(sum by (endpoint) (rate(api_endpoint_calls_total{endpoint=~\"$endpoint\"}[5m])), 0.001)",
+        "legendFormat": "{{endpoint}}"
+      }]
+    },
+
+    {
+      "id": 9, "type": "table", "title": "Endpoints Overview",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "x": 0, "y": 20, "w": 24, "h": 10 },
+      "targets": [
+        { "refId": "A", "expr": "sum by (endpoint) (rate(api_endpoint_calls_total[15m]))", "format": "table", "instant": true },
+        { "refId": "B", "expr": "sum by (endpoint) (rate(api_endpoint_errors_total[15m])) or sum by (endpoint) (rate(api_endpoint_calls_total[15m])) * 0", "format": "table", "instant": true },
+        { "refId": "C", "expr": "histogram_quantile(0.95, sum by (le, endpoint) (rate(api_endpoint_latency_seconds_bucket[15m])))", "format": "table", "instant": true },
+        { "refId": "D", "expr": "1 - clamp_min(sum by (endpoint) (rate(api_endpoint_errors_total[15m])) or vector(0), 0) / clamp_min(sum by (endpoint) (rate(api_endpoint_calls_total[15m])), 0.001)", "format": "table", "instant": true }
+      ],
+      "transformations": [
+        { "id": "merge", "options": {} },
+        { "id": "organize", "options": {
+          "excludeByName": { "Time": true },
+          "renameByName": {
+            "endpoint": "Endpoint",
+            "Value #A": "Calls/s",
+            "Value #B": "Errors/s",
+            "Value #C": "P95 (s)",
+            "Value #D": "Success Rate"
+          }
+        }}
+      ]
+    },
+
+    {
+      "id": 20, "type": "row", "title": "🖥️ JVM / System",
+      "gridPos": { "x": 0, "y": 30, "w": 24, "h": 1 },
+      "collapsed": false, "panels": []
+    },
+
+    {
+      "id": 21, "type": "timeseries", "title": "CPU Usage (%)",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "x": 0, "y": 31, "w": 8, "h": 8 },
+      "fieldConfig": { "defaults": { "unit": "percent", "min": 0, "max": 100 } },
+      "targets": [
+        { "refId": "A", "expr": "process_cpu_usage * 100", "legendFormat": "Process CPU" },
+        { "refId": "B", "expr": "system_cpu_usage * 100",  "legendFormat": "System CPU" }
+      ]
+    },
+
+    {
+      "id": 22, "type": "timeseries", "title": "Heap Memory",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "x": 8, "y": 31, "w": 8, "h": 8 },
+      "fieldConfig": { "defaults": { "unit": "bytes", "min": 0 } },
+      "targets": [
+        { "refId": "A", "expr": "sum(jvm_memory_used_bytes{area=\"heap\"})",      "legendFormat": "Used" },
+        { "refId": "B", "expr": "sum(jvm_memory_committed_bytes{area=\"heap\"})", "legendFormat": "Committed" },
+        { "refId": "C", "expr": "sum(jvm_memory_max_bytes{area=\"heap\"})",       "legendFormat": "Max" }
+      ]
+    },
+
+    {
+      "id": 23, "type": "timeseries", "title": "GC Pauses",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "x": 16, "y": 31, "w": 8, "h": 8 },
+      "fieldConfig": { "defaults": { "unit": "s" } },
+      "targets": [
+        { "refId": "A", "expr": "rate(jvm_gc_pause_seconds_sum[1m])",   "legendFormat": "GC Time / sec" },
+        { "refId": "B", "expr": "rate(jvm_gc_pause_seconds_count[1m])", "legendFormat": "GC Count / sec" }
+      ]
+    }
+  ]
+}

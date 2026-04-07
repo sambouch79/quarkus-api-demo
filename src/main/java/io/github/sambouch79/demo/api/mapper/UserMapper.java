@@ -34,8 +34,8 @@ public interface UserMapper {
   @Mapping(target = "dateCreation",     ignore = true)
   @Mapping(target = "dateModification", ignore = true)
   @Mapping(target = "modifiePar",       ignore = true)
-  @Mapping(target = "statut",           expression = "java(dto.getStatut() != null ? io.github.samiradev.demo.domain.model.StatutUser.valueOf(dto.getStatut()) : io.github.samiradev.demo.domain.model.StatutUser.ACTIF)")
-  @Mapping(target = "statutJuridique",  expression = "java(io.github.samiradev.demo.domain.model.StatutJuridiqueUser.valueOf(dto.getStatutJuridique()))")
+  @Mapping(target = "statut",           expression = "java(dto.getStatut() != null ? io.github.sambouch79.demo.domain.model.StatutUser.valueOf(dto.getStatut()) : io.github.sambouch79.demo.domain.model.StatutUser.ACTIF)")
+  @Mapping(target = "statutJuridique",  expression = "java(io.github.sambouch79.demo.domain.model.StatutJuridiqueUser.valueOf(dto.getStatutJuridique()))")
   User toModelOnCreate(UserDTO dto);
 
   // ===== PATCH : fusion DTO + domaine existant =====

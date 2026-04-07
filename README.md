@@ -1,6 +1,6 @@
 # quarkus-api-demo
 
-Projet de démonstration illustrant l'utilisation de [quarkus-utils-commons](https://github.com/samira-dev/quarkus-utils-communs) dans une API Quarkus réelle.
+Projet de démonstration illustrant l'utilisation de [quarkus-utils-communs](https://github.com/sambouch79/quarkus-utils-communs) dans une API Quarkus réelle.
 
 ## Ce que démontre ce projet
 
@@ -12,6 +12,7 @@ Projet de démonstration illustrant l'utilisation de [quarkus-utils-commons](htt
 | `@ApiResponsesDefault` — réponses Swagger mutualisées | `UserResource` |
 | `ApiKeyAuthFilter` — sécurité par clé API | `api/filter/` |
 | Logging MDC structuré | `shared/logging/` |
+| Dashboard Grafana prêt à l'emploi | `monitoring/` |
 
 ## Démarrage rapide
 
@@ -58,23 +59,53 @@ curl -X POST -H "X-API-KEY: demo-secret-key" -H "Content-Type: application/json"
     "statutJuridique": "SARL",
     "creePar": "MON_APP"
   }' http://localhost:8080/api/v1/users
+```
 
-# Consulter les métriques Prometheus
+## Monitoring & Observabilité
+
+### Métriques générées par `@MeasuredEndpoint`
+
+L'annotation instrumente automatiquement chaque endpoint avec trois métriques Micrometer :
+
+```
+api_endpoint_latency_seconds{endpoint="listAll",    operation="user.list"}
+api_endpoint_calls_total{endpoint="create",         operation="user.create"}
+api_endpoint_errors_total{endpoint="findByUuid",    operation="user.findByUuid", exception="ResourceNotFoundException"}
+```
+
+Consultation brute :
+
+```bash
 curl http://localhost:8080/q/metrics | grep api_endpoint
 ```
 
-## Métriques générées par @MeasuredEndpoint
+### Dashboard Grafana
 
-```
-api_endpoint_latency_seconds{endpoint="listAll", operation="user.list"}
-api_endpoint_calls_total{endpoint="create",   operation="user.create"}
-api_endpoint_errors_total{endpoint="findByUuid", operation="user.findByUuid", exception="ResourceNotFoundException"}
-```
+Le projet intègre un dashboard Grafana prêt à l'emploi, importable en un clic, qui visualise en temps réel les métriques générées par `@MeasuredEndpoint`.
+
+<p align="center">
+  <img src="monitoring/APIquarkusdemoDashboardGrafana.png" alt="Grafana Dashboard" width="700">
+</p>
+
+**Panels inclus :**
+
+| Panel | Métrique |
+|---|---|
+| Latence par endpoint (histogram) | `api_endpoint_latency_seconds` |
+| Appels totaux | `api_endpoint_calls_total` |
+| Taux d'erreurs par exception | `api_endpoint_errors_total` |
+
+**Import du dashboard :**
+
+1. Ouvrir Grafana → **Dashboards → Import**
+2. Charger le fichier [`monitoring/dashboard-grafana.json`](monitoring/dashboard-grafana.json)
+3. Sélectionner la datasource Prometheus pointant sur `http://localhost:8080/q/metrics`
 
 ## Stack technique
 
-- Java 17
+- Java 21
 - Quarkus 3.8
 - H2 (base de données en mémoire pour la démo)
 - MapStruct, Lombok
-- quarkus-health-commons 1.0.0
+- Micrometer + Prometheus (`quarkus-micrometer-registry-prometheus`)
+- quarkus-utils-commons 1.0.0

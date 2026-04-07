@@ -10,7 +10,7 @@
   <packaging>jar</packaging>
 
   <name>quarkus-api-demo</name>
-  <description>Projet démo illustrant l'utilisation de quarkus-utils-commons sur une API User</description>
+  <description>Projet démo illustrant l'utilisation de quarkus-utils-communs sur une API User</description>
 
   <properties>
     <java.version>21</java.version>
